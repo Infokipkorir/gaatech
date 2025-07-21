@@ -85,7 +85,8 @@ for ($i = 6; $i >= 0; $i--) {
       <a href="admin_dashboard.php"><i class="fas fa-chart-line"></i> Dashboard</a>
       <a href="manage_users.php"><i class="fas fa-users-cog"></i> Manage Users</a>
       <a href="admin_payments.php"><i class="fas fa-money-check-alt"></i> View Payments</a>
-      <a href="messages.php"><i class="fas fa-envelope"></i> Messages</a>
+      <a href="admin_messages.php"><i class="fas fa-envelope"></i> Messages</a>
+      <a href="admin_ads.php"><i class="fas fa-sign-out-alt"></i> Manage ADs</a>
       <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
 

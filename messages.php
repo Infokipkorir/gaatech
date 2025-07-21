@@ -1,75 +1,64 @@
 <?php
 session_start();
-require_once 'db.php';
+require_once 'db.php'; 
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
-$role = $_SESSION['role'];
+$userId = $_SESSION['user_id'];
 
-// Send message
-$success = '';
-$error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recipient_id'], $_POST['message'])) {
-    $recipient_id = (int) $_POST['recipient_id'];
-    $message = trim($_POST['message']);
+// Fetch messages (received only)
+$stmt = $conn->prepare("
+    SELECT m.*, u.name AS sender_name
+    FROM messages m
+    LEFT JOIN users u ON m.sender_id = u.id
+    WHERE m.recipient_id = ? OR (m.is_broadcast = 1 AND m.recipient_id IS NULL)
+    ORDER BY m.created_at DESC
+");
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$result = $stmt->get_result();
 
-    if ($recipient_id && $message) {
-        $stmt = $conn->prepare("INSERT INTO messages (from_user, to_user, message, is_read, created_at) VALUES (?, ?, ?, 0, NOW())");
-        $stmt->bind_param("iis", $user_id, $recipient_id, $message);
-        if ($stmt->execute()) {
-            $success = "✅ Message sent successfully!";
-        } else {
-            $error = "❌ Failed to send message.";
-        }
-    } else {
-        $error = "⚠️ All fields are required.";
-    }
+$messages = [];
+while ($row = $result->fetch_assoc()) {
+    $messages[] = $row;
 }
-
-// Fetch users for recipient dropdown
-$users = $conn->query("SELECT id, name FROM users WHERE id != $user_id ORDER BY name");
+$stmt->close();
 ?>
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Send Message - Gaatech</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Notifications</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-  <div class="container py-4">
-    <h3 class="text-primary mb-4">📩 Send a Notification Message</h3>
+<div class="container mt-5">
+    <h2 class="mb-4">📨 My Notifications</h2>
 
-    <?php if ($success): ?>
-      <div class="alert alert-success"><?= $success ?></div>
-    <?php elseif ($error): ?>
-      <div class="alert alert-danger"><?= $error ?></div>
+    <?php if (empty($messages)): ?>
+        <div class="alert alert-info">No Notifications yet.</div>
+    <?php else: ?>
+        <div class="list-group">
+            <?php foreach ($messages as $msg): ?>
+                <div class="list-group-item mb-2 shadow-sm rounded">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>From:</strong>
+                            <?= $msg['is_broadcast'] ? '<span class="text-primary">Admin (Broadcast)</span>' : htmlspecialchars($msg['sender_name']) ?>
+                        </div>
+                        <small class="text-muted"><?= date('M j, Y H:i', strtotime($msg['created_at'])) ?></small>
+                    </div>
+                    <hr class="my-2">
+                    <div><?= nl2br(htmlspecialchars($msg['message'])) ?></div>
+                </div>
+            <?php endforeach; ?>
+        </div>
     <?php endif; ?>
 
-    <form method="POST" class="card p-4 shadow-sm">
-      <div class="mb-3">
-        <label for="recipient_id" class="form-label">Select User</label>
-        <select name="recipient_id" id="recipient_id" class="form-select" required>
-          <option value="">-- Choose User --</option>
-          <?php while ($user = $users->fetch_assoc()): ?>
-            <option value="<?= $user['id'] ?>"><?= htmlspecialchars($user['name']) ?></option>
-          <?php endwhile; ?>
-        </select>
-      </div>
-      <div class="mb-3">
-        <label for="message" class="form-label">Message</label>
-        <textarea name="message" id="message" class="form-control" rows="4" required placeholder="Type your message..."></textarea>
-      </div>
-      <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Message</button>
-    </form>
-  </div>
-
-  <script src="https://kit.fontawesome.com/a2d2a0e1a8.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <a href="dashboard.php" class="btn btn-secondary mt-4">← Back to Dashboard</a>
+</div>
 </body>
 </html>
-<?php include 'footerr.php' ?>

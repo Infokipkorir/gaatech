@@ -48,26 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['name'], $_POST['email
 }
 
 // Fetch user info
-$stmt = $conn->prepare("SELECT name, email, plan FROM users WHERE id = ?");
+$stmt = $conn->prepare("SELECT name, email FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
-$stmt->bind_result($name, $email, $plan);
+$stmt->bind_result($name, $email);
 $stmt->fetch();
 $stmt->close();
-
-// Update plan
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['new_plan'])) {
-    $new_plan = $_POST['new_plan'];
-    $stmt = $conn->prepare("UPDATE users SET plan = ? WHERE id = ?");
-    $stmt->bind_param("si", $new_plan, $user_id);
-    if ($stmt->execute()) {
-        $plan = $new_plan;
-        $planMessage = "✅ Plan updated to <strong>$plan</strong>.";
-    } else {
-        $planMessage = "❌ Failed to update your plan.";
-    }
-    $stmt->close();
-}
 
 // Fetch QR codes
 $stmt = $conn->prepare("SELECT id, data, filename, created_at FROM qrcodes WHERE user_id = ? ORDER BY created_at DESC");
@@ -86,9 +72,6 @@ $result = $stmt->get_result();
   <style>
     body { background-color: #f8f9fa; }
     .card-img-top { max-height: 220px; object-fit: contain; }
-    .plan-badge { font-size: 0.85rem; padding: 4px 10px; border-radius: 20px; }
-    .plan-pro { background: #0d6efd; color: #fff; }
-    .plan-free { background: #6c757d; color: #fff; }
     .icon-button { border: none; background: none; color: #333; font-size: 1.1rem; cursor: pointer; }
     .icon-button:hover { color: #0d6efd; }
   </style>
@@ -102,9 +85,9 @@ $result = $stmt->get_result();
     <div class="ms-auto d-flex gap-2">
       <a href="dashboard.php" class="btn btn-outline-light" title="Dashboard"><i class="fas fa-home"></i></a>
       <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#settingsModal" title="Account Settings">
-        <i class="fas fa-user-cog">Settings</i>
+        <i class="fas fa-user-cog"></i>
       </button>
-      <a href="logout.php" class="btn btn-outline-light" title="Logout"><i class="fas fa-sign-out-alt">Logout</i></a>
+      <a href="logout.php" class="btn btn-outline-light" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
     </div>
   </div>
 </nav>
@@ -114,35 +97,6 @@ $result = $stmt->get_result();
   <div class="bg-white shadow-sm p-4 rounded mb-4">
     <h3 class="mb-1 text-primary"><i class="fas fa-user-circle me-2"></i><?= htmlspecialchars($name) ?></h3>
     <p class="mb-2 text-muted"><i class="fas fa-envelope me-2"></i><?= htmlspecialchars($email) ?></p>
-
-    <div class="mb-3">
-      <span class="fw-bold">Your Plan:</span>
-      <span class="plan-badge <?= $plan === 'Pro' ? 'plan-pro' : 'plan-free' ?>">
-        <?= $plan ?> <i class="fas <?= $plan === 'Pro' ? 'fa-crown' : 'fa-user' ?>"></i>
-      </span>
-    </div>
-
-    <?php if (isset($planMessage)): ?>
-      <div class="alert alert-info alert-dismissible fade show"><?= $planMessage ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    <?php endif; ?>
-
-    <!-- Change Plan Form -->
-    <form method="POST" class="row g-3 align-items-center">
-      <div class="col-auto">
-        <label for="new_plan" class="form-label mb-0"><i class="fas fa-sync-alt me-1"></i> Change Plan:</label>
-      </div>
-      <div class="col-auto">
-        <select name="new_plan" id="new_plan" class="form-select">
-          <option value="Free" <?= $plan === 'Free' ? 'selected' : '' ?>>Free</option>
-          <option value="Pro" <?= $plan === 'Pro' ? 'selected' : '' ?>>Pro</option>
-        </select>
-      </div>
-      <div class="col-auto">
-        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-check-circle"></i></button>
-      </div>
-    </form>
   </div>
 
   <!-- QR Code Alerts -->
@@ -206,7 +160,6 @@ $result = $stmt->get_result();
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  // Optional: Hide modal after 2s if success
   document.getElementById('settingsForm')?.addEventListener('submit', () => {
     setTimeout(() => {
       const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
