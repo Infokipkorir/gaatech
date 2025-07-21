@@ -1,0 +1,6 @@
+.ad-card {
+  transition: 0.3s ease;
+}
+.ad-card:hover {
+  transform: scale(1.02);
+}

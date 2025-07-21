@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once 'db.php';
+ include 'load_ads.php'; 
+
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -12,7 +14,6 @@ $user = $conn->query("SELECT * FROM users WHERE id = $user_id")->fetch_assoc();
 
 // Fetch notifications
 $notifications = [];
-
 $stmt = $conn->prepare("
     SELECT * FROM messages 
     WHERE (recipient_id = ? OR (is_broadcast = 1 AND recipient_id IS NULL)) 
@@ -20,23 +21,23 @@ $stmt = $conn->prepare("
     ORDER BY created_at DESC 
     LIMIT 5
 ");
-
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
-
 while ($row = $result->fetch_assoc()) {
     $notifications[] = $row;
 }
-
 $stmt->close();
+
+// Fetch active ads
+$ads = $conn->query("SELECT * FROM ads WHERE is_active = 1 AND (plan_target = 'Free' OR plan_target IS NULL) AND NOW() BETWEEN start_date AND end_date ORDER BY start_date DESC LIMIT 3");
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Home- Gaatech QR</title>
+  <title>Home - Gaatech QR</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -58,47 +59,66 @@ $stmt->close();
   <div class="container">
     <a class="navbar-brand" href="#">Gaatech QR</a>
     <div class="ms-auto d-flex align-items-center">
-
-    <!-- Notifications -->
-    <div class="dropdown me-3">
-      <button class="btn btn-outline-light position-relative" data-bs-toggle="dropdown">
-        <i class="fas fa-bell"></i>
-        <?php if (count($notifications) > 0): ?>
-          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-            <?= count($notifications) ?>
-          </span>
-        <?php endif; ?>
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end shadow" style="width:300px;">
-        <li class="dropdown-header">Notifications</li>
-        <?php if (count($notifications) === 0): ?>
-          <li class="px-3 py-2 text-muted small">No new messages</li>
-        <?php endif; ?>
-        <?php foreach ($notifications as $note): ?>
-          <li class="px-3 py-2 small border-bottom">
-            <div><?= htmlspecialchars($note['message']) ?></div>
-            <div class="text-muted small"><?= date('M j, H:i', strtotime($note['created_at'])) ?></div>
-          </li>
-        <?php endforeach; ?>
-        <li><a href="messages.php" class="dropdown-item text-center">View all</a></li>
-      </ul>
-    </div>
+      <!-- Notifications -->
+      <div class="dropdown me-3">
+        <button class="btn btn-outline-light position-relative" data-bs-toggle="dropdown">
+          <i class="fas fa-bell"></i>
+          <?php if (count($notifications) > 0): ?>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              <?= count($notifications) ?>
+            </span>
+          <?php endif; ?>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow" style="width:300px;">
+          <li class="dropdown-header">Notifications</li>
+          <?php if (count($notifications) === 0): ?>
+            <li class="px-3 py-2 text-muted small">No new messages</li>
+          <?php endif; ?>
+          <?php foreach ($notifications as $note): ?>
+            <li class="px-3 py-2 small border-bottom">
+              <div><?= htmlspecialchars($note['message']) ?></div>
+              <div class="text-muted small"><?= date('M j, H:i', strtotime($note['created_at'])) ?></div>
+            </li>
+          <?php endforeach; ?>
+          <li><a href="messages.php" class="dropdown-item text-center">View all</a></li>
+        </ul>
+      </div>
       <a href="my_account.php" class="btn btn-outline-light me-2"><i class="fas fa-user"></i> My Account</a>
       <a href="logout.php" class="btn btn-outline-light"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
   </div>
 </nav>
 
+<!-- Ads Section -->
+<div class="container mt-4">
+  <div class="row">
+    <?php while ($ad = $ads->fetch_assoc()): ?>
+      <div class="col-md-4 mb-3">
+        <div class="card shadow">
+          <?php if (!empty($ad['image'])): ?>
+            <img src="uploads/<?= htmlspecialchars($ad['image']) ?>" class="card-img-top" alt="Ad Image">
+          <?php endif; ?>
+          <div class="card-body">
+            <h5 class="card-title text-primary"><?= htmlspecialchars($ad['title']) ?></h5>
+            <p class="card-text"><?= htmlspecialchars($ad['content']) ?></p>
+            <?php if (!empty($ad['link'])): ?>
+              <a href="<?= htmlspecialchars($ad['link']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">Learn More</a>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    <?php endwhile; ?>
+  </div>
+</div>
+
 <!-- QR Code Generator -->
 <div class="container py-5">
   <h3 class="text-primary mb-4">Generate QR Code</h3>
-
   <form id="qrForm" enctype="multipart/form-data">
     <div class="mb-3">
       <label class="form-label">Enter URL or Text</label>
       <input type="text" id="qrData" class="form-control" required placeholder="https://example.com">
     </div>
-
     <div class="mb-3">
       <label class="form-label">Size</label>
       <select id="qrSize" class="form-select">
@@ -108,24 +128,15 @@ $stmt->close();
         <option value="300">300x300</option>
       </select>
     </div>
-
     <div class="mb-3">
       <label class="form-label">QR Color</label>
       <input type="color" id="qrColor" value="#000000" class="form-control form-control-color">
     </div>
-
-    <div class="mb-3">
-      <label class="form-label">Upload Logo (PNG/JPG)</label>
-      <input type="file" id="qrLogo" accept="image/png, image/jpeg" class="form-control">
-    </div>
-
     <button type="submit" class="btn btn-primary"><i class="fas fa-qrcode"></i> Generate</button>
   </form>
-
   <div class="text-center mt-4">
     <canvas id="qrCanvas"></canvas>
   </div>
-
   <div class="text-center">
     <a id="downloadBtn" class="btn btn-success me-2" style="display:none;"><i class="fas fa-download"></i> Download</a>
     <a id="shareBtn" class="btn btn-info" target="_blank" style="display:none;"><i class="fas fa-share-alt"></i> Share</a>
@@ -145,7 +156,6 @@ document.getElementById('qrForm').addEventListener('submit', async function(e) {
   const qrSize = parseInt(document.getElementById('qrSize').value);
   const canvas = document.getElementById('qrCanvas');
   const color = document.getElementById('qrColor')?.value || '#000000';
-  const logoInput = document.getElementById('qrLogo');
 
   if (!qrData) return alert("Please enter data.");
 
@@ -157,40 +167,12 @@ document.getElementById('qrForm').addEventListener('submit', async function(e) {
   });
 
   const base64 = canvas.toDataURL("image/png");
-
-  if (logoInput && logoInput.files.length > 0) {
-    const logo = logoInput.files[0];
-    const img = new Image();
-    img.src = URL.createObjectURL(logo);
-    img.onload = async () => {
-      const ctx = canvas.getContext('2d');
-      const size = canvas.width * 0.25;
-      ctx.drawImage(img, (canvas.width - size) / 2, (canvas.height - size) / 2, size, size);
-      saveQR(base64, logo);
-    };
-  } else {
-    saveQR(base64);
-  }
-});
-
-function saveQR(base64, logo = null) {
-  const formData = new FormData();
-  formData.append("data", document.getElementById('qrData').value.trim());
-  formData.append("image", base64);
-  if (logo) formData.append("qrLogo", logo);
-
-  fetch("save_qr.php", {
-    method: "POST",
-    body: formData
-  });
-
   document.getElementById("downloadBtn").href = base64;
   document.getElementById("downloadBtn").download = 'gaatech_qr_' + Date.now() + '.png';
   document.getElementById("downloadBtn").style.display = 'inline-block';
-
   document.getElementById("shareBtn").href = base64;
   document.getElementById("shareBtn").style.display = 'inline-block';
-}
+});
 
 function acceptCookies() {
   localStorage.setItem("cookieAccepted", "true");
@@ -203,7 +185,6 @@ window.onload = () => {
   }
 };
 </script>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <?php include 'footer.php'; ?>
 </body>
