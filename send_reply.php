@@ -1,20 +1,20 @@
 <?php
-require_once 'db.php';
-session_start();
+include 'admin_auth.php';
+include '../conn.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'], $_POST['email']) && $_SESSION['user_role'] === 'admin') {
-    $message = trim($_POST['message']);
-    $email = $_POST['email'];
-    $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $to = $_POST['to_user_id'];
+    $message = $_POST['message'];
+    $subject = $_POST['subject'];
+
+    $stmt = $conn->prepare("INSERT INTO messages (sender_id, to_user_id, message, subject, is_support) VALUES (0, ?, ?, ?, 1)");
+    $stmt->bind_param("iss", $to, $message, $subject);
     $stmt->execute();
-    $stmt->bind_result($receiver_id);
-    if ($stmt->fetch()) {
-        $stmt->close();
-        $stmt2 = $conn->prepare("INSERT INTO messages (sender_id, receiver_id, message) VALUES (?, ?, ?)");
-        $stmt2->bind_param("iis", $_SESSION['user_id'], $receiver_id, $message);
-        $stmt2->execute();
-    }
+    $stmt->close();
+
+    // Optional: add notification logic if using separate notifications table
+
+    header("Location: admin_support.php?success=1");
+    exit();
 }
-header("Location: admin_messages.php");
-exit();
+?>

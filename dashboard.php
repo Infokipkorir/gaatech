@@ -31,6 +31,19 @@ $stmt->close();
 
 // Fetch active ads
 $ads = $conn->query("SELECT * FROM ads WHERE is_active = 1 AND (plan_target = 'Free' OR plan_target IS NULL) AND NOW() BETWEEN start_date AND end_date ORDER BY start_date DESC LIMIT 3");
+
+//Fetch support messages
+$user_id = $_SESSION['user_id'];
+$unread = 0;
+
+$stmt = $conn->prepare("SELECT COUNT(*) AS unread FROM support_messages WHERE user_id = ? AND is_read = 0");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($row = $result->fetch_assoc()) {
+    $unread = $row['unread'];
+}
+$stmt->close();
 ?>
 
 <!DOCTYPE html>
@@ -38,6 +51,8 @@ $ads = $conn->query("SELECT * FROM ads WHERE is_active = 1 AND (plan_target = 'F
 <head>
   <meta charset="UTF-8">
   <title>Home - Gaatech QR</title>
+  <link rel="icon" type="image/png" href="admin\assets\Gaatech logo2.jpg">
+  <link rel="stylesheet" href="assets/css/style.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -148,8 +163,51 @@ $ads = $conn->query("SELECT * FROM ads WHERE is_active = 1 AND (plan_target = 'F
   <a href="privacy.php" class="text-primary">Privacy Policy</a>.
   <button class="btn btn-sm btn-primary ms-3" onclick="acceptCookies()">Accept</button>
 </div>
+<!-- Floating Support Button -->
+<a href="support.php" class="support-float-btn">
+  💬
+  <span class="support-badge">1</span>
+</a>
 
+<style>
+.support-float-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #0d6efd;
+  color: white;
+  padding: 14px 18px;
+  border-radius: 50%;
+  font-size: 20px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+  z-index: 9999;
+}
+.support-float-btn:hover {
+  background-color: #0b5ed7;
+}
+.support-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: red;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 50%;
+  font-size: 12px;
+}
+</style>
 <script>
+  document.getElementById('support-btn').addEventListener('click', function () {
+    const box = document.getElementById('support-box');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('support-btn').addEventListener('click', function () {
+    const box = document.getElementById('support-box');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  });
+
 document.getElementById('qrForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const qrData = document.getElementById('qrData').value.trim();

@@ -83,10 +83,11 @@ $result = $stmt->get_result();
   <div class="container">
     <a class="navbar-brand fw-bold" href="#">Gaatech QR</a>
     <div class="ms-auto d-flex gap-2">
-      <a href="dashboard.php" class="btn btn-outline-light" title="Dashboard"><i class="fas fa-home"></i></a>
+      <a href="dashboard.php" class="btn btn-outline-light" title="Dashboard"><i class="fas fa-home"></i>Home</a>
       <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#settingsModal" title="Account Settings">
-        <i class="fas fa-user-cog"></i>
+        <i class="fas fa-user-cog"></i>Settings
       </button>
+      <a href="admin_dashboard.php" class="btn btn-outline-light me-2"><i class="fas fa-arrow-left"></i> Back</a>
       <a href="logout.php" class="btn btn-outline-light" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
     </div>
   </div>
@@ -167,6 +168,7 @@ $result = $stmt->get_result();
     }, 2000);
   });
 </script>
-<?php include 'footer.php'; ?>
+
 </body>
 </html>
+<?php include 'footer.php'; ?>

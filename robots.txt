@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /auth.php
+Disallow: /logout.php
+Disallow: /admin_auth.php
+Allow: /

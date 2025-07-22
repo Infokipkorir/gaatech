@@ -12,18 +12,21 @@ $result = $stmt->get_result();
 <head>
   <meta charset="UTF-8">
   <title>Admin Messages - Gaatech</title>
+  <link rel="icon" type="image/png" href="admin\assets\Gaatech logo2.jpg">
+  <link rel="stylesheet" href="assets/css/style.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     body { background-color: #f8f9fa; }
     .message-card { background: #fff; border-left: 4px solid #0d6efd; margin-bottom: 1rem; padding: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .message-card small { color: #6c757d; }
+    .message-card small { color:rgb(5, 138, 255); }
   </style>
 </head>
 <body>
+  
 <div class="container mt-4">
   <h3 class="text-primary mb-3"><i class="fas fa-inbox me-2"></i>Admin Messages Panel</h3>
-
+  <a href="admin_dashboard.php" class="btn btn-outline-dark"><i class="fas fa-arrow-left"></i> Back</a>
   <!-- Broadcast Button -->
   <div class="mb-3">
     <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#broadcastModal">
@@ -60,6 +63,7 @@ $result = $stmt->get_result();
       <div class="modal-header bg-dark text-white">
         <h5 class="modal-title">Broadcast Message</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <a href="admin_dashboard.php" class="btn btn-outline-light me-2"><i class="fas fa-arrow-left"></i> Back</a>
       </div>
       <div class="modal-body">
         <textarea name="message" class="form-control" rows="5" placeholder="Type your broadcast message..." required></textarea>
@@ -95,7 +99,6 @@ $result = $stmt->get_result();
     </form>
   </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.getElementById('replyModal').addEventListener('show.bs.modal', function (event) {
@@ -108,3 +111,4 @@ document.getElementById('replyModal').addEventListener('show.bs.modal', function
 </script>
 </body>
 </html>
+<?php include 'footer.php' ?>

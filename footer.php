@@ -1,4 +1,6 @@
-<footer class="bg-dark text-white pt-5 pb-4 mt-5">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<footer style="background-color: #007bff;" class="text-white pt-5 pb-4 mt-5">
   <div class="container text-md-left">
     <div class="row">
 
@@ -42,6 +44,33 @@
 
     </div>
   </div>
+<!-- Floating Support Button -->
+<a href="support.php" class="support-btn" title="Need Help?">
+  <i class="fas fa-headset"></i>
+</a>
+
+<!-- Button Style -->
+<style>
+  .support-btn {
+    position: fixed;
+    bottom: 80px; /* just above footer */
+    right: 20px;
+    background-color: #dc3545; /* red */
+    color: white;
+    font-size: 20px;
+    padding: 15px;
+    border-radius: 50%;
+    text-align: center;
+    z-index: 9999;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: 0.3s ease;
+  }
+
+  .support-btn:hover {
+    background-color: #c82333;
+    text-decoration: none;
+  }
+</style>
 
   <div class="text-center py-3 bg-primary mt-4">
     &copy; <?= date('Y') ?> Gaatech QR Generator. All rights reserved.
