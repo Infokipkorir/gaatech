@@ -1,8 +1,7 @@
 <?php
 session_start();
 require_once 'db.php';
- include 'load_ads.php'; 
-
+include 'load_ads.php';
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
@@ -10,16 +9,21 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$user = $conn->query("SELECT * FROM users WHERE id = $user_id")->fetch_assoc();
 
-// Fetch notifications
+// Fetch user
+$stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+// Fetch unread notifications
 $notifications = [];
 $stmt = $conn->prepare("
     SELECT * FROM messages 
     WHERE (recipient_id = ? OR (is_broadcast = 1 AND recipient_id IS NULL)) 
-      AND is_read = 0 
-    ORDER BY created_at DESC 
-    LIMIT 5
+    AND is_read = 0 
+    ORDER BY created_at DESC LIMIT 5
 ");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -29,13 +33,8 @@ while ($row = $result->fetch_assoc()) {
 }
 $stmt->close();
 
-// Fetch active ads
-$ads = $conn->query("SELECT * FROM ads WHERE is_active = 1 AND (plan_target = 'Free' OR plan_target IS NULL) AND NOW() BETWEEN start_date AND end_date ORDER BY start_date DESC LIMIT 3");
-
-//Fetch support messages
-$user_id = $_SESSION['user_id'];
+// Fetch support unread count
 $unread = 0;
-
 $stmt = $conn->prepare("SELECT COUNT(*) AS unread FROM support_messages WHERE user_id = ? AND is_read = 0");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
@@ -51,10 +50,10 @@ $stmt->close();
 <head>
   <meta charset="UTF-8">
   <title>Home - Gaatech QR</title>
-  <link rel="icon" type="image/png" href="admin\assets\Gaatech logo2.jpg">
+  <link rel="icon" type="image/png" href="admin/assets/Gaatech logo2.jpg">
   <link rel="stylesheet" href="assets/css/style.css">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <style>
     body { background: #f8f9fa; }
@@ -78,7 +77,7 @@ $stmt->close();
       <div class="dropdown me-3">
         <button class="btn btn-outline-light position-relative" data-bs-toggle="dropdown">
           <i class="fas fa-bell"></i>
-          <?php if (count($notifications) > 0): ?>
+          <?php if (!empty($notifications)): ?>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
               <?= count($notifications) ?>
             </span>
@@ -86,16 +85,17 @@ $stmt->close();
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow" style="width:300px;">
           <li class="dropdown-header">Notifications</li>
-          <?php if (count($notifications) === 0): ?>
+          <?php if (empty($notifications)): ?>
             <li class="px-3 py-2 text-muted small">No new messages</li>
+          <?php else: ?>
+            <?php foreach ($notifications as $note): ?>
+              <li class="px-3 py-2 small border-bottom">
+                <div><?= htmlspecialchars($note['message']) ?></div>
+                <div class="text-muted small"><?= date('M j, H:i', strtotime($note['created_at'])) ?></div>
+              </li>
+            <?php endforeach; ?>
+            <li><a href="messages.php" class="dropdown-item text-center">View all</a></li>
           <?php endif; ?>
-          <?php foreach ($notifications as $note): ?>
-            <li class="px-3 py-2 small border-bottom">
-              <div><?= htmlspecialchars($note['message']) ?></div>
-              <div class="text-muted small"><?= date('M j, H:i', strtotime($note['created_at'])) ?></div>
-            </li>
-          <?php endforeach; ?>
-          <li><a href="messages.php" class="dropdown-item text-center">View all</a></li>
         </ul>
       </div>
       <a href="my_account.php" class="btn btn-outline-light me-2"><i class="fas fa-user"></i> My Account</a>
@@ -107,29 +107,35 @@ $stmt->close();
 <!-- Ads Section -->
 <div class="container mt-4">
   <div class="row">
-    <?php while ($ad = $ads->fetch_assoc()): ?>
-      <div class="col-md-4 mb-3">
-        <div class="card shadow">
-          <?php if (!empty($ad['image'])): ?>
-            <img src="uploads/<?= htmlspecialchars($ad['image']) ?>" class="card-img-top" alt="Ad Image">
-          <?php endif; ?>
-          <div class="card-body">
-            <h5 class="card-title text-primary"><?= htmlspecialchars($ad['title']) ?></h5>
-            <p class="card-text"><?= htmlspecialchars($ad['content']) ?></p>
-            <?php if (!empty($ad['link'])): ?>
-              <a href="<?= htmlspecialchars($ad['link']) ?>" target="_blank" class="btn btn-outline-primary btn-sm">Learn More</a>
-            <?php endif; ?>
+    <?php if (!empty($ads)): ?>
+      <?php foreach ($ads as $ad): ?>
+        <div class="card mb-3">
+          <div class="row g-0">
+            <div class="col-md-4">
+              <img src="uploads/<?= htmlspecialchars($ad['image']) ?>" class="img-fluid rounded-start" alt="Ad">
+            </div>
+            <div class="col-md-8">
+              <div class="card-body">
+                <h5 class="card-title text-primary"><?= htmlspecialchars($ad['title']) ?></h5>
+                <p class="card-text"><?= htmlspecialchars($ad['content']) ?></p>
+                <?php if (!empty($ad['link'])): ?>
+                  <a href="<?= htmlspecialchars($ad['link']) ?>" class="btn btn-sm btn-outline-primary" target="_blank">Visit</a>
+                <?php endif; ?>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    <?php endwhile; ?>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <p class="text-muted">No ads to display.</p>
+    <?php endif; ?>
   </div>
 </div>
 
 <!-- QR Code Generator -->
 <div class="container py-5">
   <h3 class="text-primary mb-4">Generate QR Code</h3>
-  <form id="qrForm" enctype="multipart/form-data">
+  <form id="qrForm">
     <div class="mb-3">
       <label class="form-label">Enter URL or Text</label>
       <input type="text" id="qrData" class="form-control" required placeholder="https://example.com">
@@ -149,26 +155,30 @@ $stmt->close();
     </div>
     <button type="submit" class="btn btn-primary"><i class="fas fa-qrcode"></i> Generate</button>
   </form>
+
   <div class="text-center mt-4">
     <canvas id="qrCanvas"></canvas>
-  </div>
-  <div class="text-center">
     <a id="downloadBtn" class="btn btn-success me-2" style="display:none;"><i class="fas fa-download"></i> Download</a>
     <a id="shareBtn" class="btn btn-info" target="_blank" style="display:none;"><i class="fas fa-share-alt"></i> Share</a>
   </div>
 </div>
 
-<div id="cookie-banner" class="alert alert-dark text-center fixed-bottom mb-0" style="display:none; z-index: 1050;">
+<!-- Cookie Banner -->
+<div id="cookie-banner" class="alert alert-dark text-center fixed-bottom mb-0" style="display:none; z-index:1050;">
   🍪 We use cookies to enhance your experience. By continuing, you agree to our 
   <a href="privacy.php" class="text-primary">Privacy Policy</a>.
   <button class="btn btn-sm btn-primary ms-3" onclick="acceptCookies()">Accept</button>
 </div>
+
 <!-- Floating Support Button -->
 <a href="support.php" class="support-float-btn">
   💬
-  <span class="support-badge">1</span>
+  <?php if ($unread > 0): ?> 
+    <span class="support-badge"><?= $unread ?></span>
+  <?php endif; ?>
 </a>
 
+<!-- Support Button Styles -->
 <style>
 .support-float-btn {
   position: fixed;
@@ -197,25 +207,17 @@ $stmt->close();
   font-size: 12px;
 }
 </style>
+
+<!-- Scripts -->
 <script>
-  document.getElementById('support-btn').addEventListener('click', function () {
-    const box = document.getElementById('support-box');
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-  });
-
-  document.getElementById('support-btn').addEventListener('click', function () {
-    const box = document.getElementById('support-box');
-    box.style.display = box.style.display === 'none' ? 'block' : 'none';
-  });
-
-document.getElementById('qrForm').addEventListener('submit', async function(e) {
+document.getElementById('qrForm').addEventListener('submit', function(e) {
   e.preventDefault();
   const qrData = document.getElementById('qrData').value.trim();
   const qrSize = parseInt(document.getElementById('qrSize').value);
+  const color = document.getElementById('qrColor').value;
   const canvas = document.getElementById('qrCanvas');
-  const color = document.getElementById('qrColor')?.value || '#000000';
 
-  if (!qrData) return alert("Please enter data.");
+  if (!qrData) return alert("Please enter some data.");
 
   const qr = new QRious({
     element: canvas,
@@ -228,6 +230,7 @@ document.getElementById('qrForm').addEventListener('submit', async function(e) {
   document.getElementById("downloadBtn").href = base64;
   document.getElementById("downloadBtn").download = 'gaatech_qr_' + Date.now() + '.png';
   document.getElementById("downloadBtn").style.display = 'inline-block';
+
   document.getElementById("shareBtn").href = base64;
   document.getElementById("shareBtn").style.display = 'inline-block';
 });
@@ -243,7 +246,9 @@ window.onload = () => {
   }
 };
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <?php include 'footer.php'; ?>
 </body>
 </html>

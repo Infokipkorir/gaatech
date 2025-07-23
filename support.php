@@ -49,6 +49,7 @@ $user_name = $_SESSION['user_name'];
 
 <div class="container support-wrapper">
   <div class="card">
+    <a href="admin_dashboard.php" class="btn btn-outline-dark me-2"><i class="fas fa-arrow-left"></i> Back</a>
     <div class="card-header">
       <h5 class="mb-0">Support Center</h5>
     </div>
