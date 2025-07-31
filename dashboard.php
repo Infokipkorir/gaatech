@@ -64,6 +64,33 @@ $stmt->close();
       padding: 10px;
       background: white;
     }
+
+.support-float-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color:rgb(77, 255, 0);
+  color: white;
+  padding: 14px 18px;
+  border-radius: 50%;
+  font-size: 20px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+  z-index: 9999;
+}
+.support-float-btn:hover {
+  background-color:rgb(255, 11, 11);
+}
+.support-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: red;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 50%;
+  font-size: 12px;
+}
   </style>
 </head>
 <body>
@@ -138,7 +165,7 @@ $stmt->close();
   <form id="qrForm">
     <div class="mb-3">
       <label class="form-label">Enter URL or Text</label>
-      <input type="text" id="qrData" class="form-control" required placeholder="https://example.com">
+      <input type="text" id="qrData" class="form-control" required placeholder="https://gaatech.co.ke">
     </div>
     <div class="mb-3">
       <label class="form-label">Size</label>
@@ -177,36 +204,6 @@ $stmt->close();
     <span class="support-badge"><?= $unread ?></span>
   <?php endif; ?>
 </a>
-
-<!-- Support Button Styles -->
-<style>
-.support-float-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #0d6efd;
-  color: white;
-  padding: 14px 18px;
-  border-radius: 50%;
-  font-size: 20px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-  text-decoration: none;
-  z-index: 9999;
-}
-.support-float-btn:hover {
-  background-color: #0b5ed7;
-}
-.support-badge {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: red;
-  color: white;
-  padding: 3px 6px;
-  border-radius: 50%;
-  font-size: 12px;
-}
-</style>
 
 <!-- Scripts -->
 <script>

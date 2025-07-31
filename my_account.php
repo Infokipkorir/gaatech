@@ -74,6 +74,32 @@ $result = $stmt->get_result();
     .card-img-top { max-height: 220px; object-fit: contain; }
     .icon-button { border: none; background: none; color: #333; font-size: 1.1rem; cursor: pointer; }
     .icon-button:hover { color: #0d6efd; }
+    .support-float-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color:rgb(77, 255, 0);
+  color: white;
+  padding: 14px 18px;
+  border-radius: 50%;
+  font-size: 20px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+  z-index: 9999;
+}
+.support-float-btn:hover {
+  background-color:rgb(255, 11, 11);
+}
+.support-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: red;
+  color: white;
+  padding: 3px 6px;
+  border-radius: 50%;
+  font-size: 12px;
+}
   </style>
 </head>
 <body>
