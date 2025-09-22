@@ -1,30 +1,42 @@
 <?php
-session_start();
-require_once 'db.php';
+require 'vendor/autoload.php';
 
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
+session_start();
+
+\Stripe\Stripe::setApiKey(sk_test_51PoIL7JjFHItPEI8Jz8SgHsqReJ649tIq58t9ne14X913PEKC4u5VPRxHPkbd6KNbBOY5I7WAMtikbTTOFpenCVm00G7PGp6Mj); //Stripe Secret Key
+
+$plan = $_POST['plan'] ?? '';
+$prices = [
+    "basic" => 0,
+    "pro" => 9.99,
+    "premium" => 19.99
+];
+
+if (!isset($prices[$plan])) {
+    die("Invalid plan");
 }
 
-$user_id = $_SESSION['user_id'];
+$amount = $prices[$plan] * 100; // cents
 
-// Simulate payment success (normally you'd verify with Stripe, PayPal etc.)
-$card_name = $_POST['card_name'] ?? '';
-$card_number = $_POST['card_number'] ?? '';
-$expiry = $_POST['expiry'] ?? '';
-$cvv = $_POST['cvv'] ?? '';
+try {
+    $checkout_session = \Stripe\Checkout\Session::create([
+        'payment_method_types' => ['card'],
+        'line_items' => [[
+            'price_data' => [
+                'currency' => 'usd',
+                'product_data' => ['name' => ucfirst($plan) . " Plan"],
+                'unit_amount' => $amount,
+            ],
+            'quantity' => 1,
+        ]],
+        'mode' => 'payment',
+        'success_url' => 'http://yourdomain.com/payment_success.php?plan=' . urlencode($plan),
+        'cancel_url' => 'http://yourdomain.com/upgrade_payment.php',
+    ]);
 
-if ($card_name && $card_number && $expiry && $cvv) {
-    // Mark user as Pro
-    $stmt = $conn->prepare("UPDATE users SET plan = 'Pro' WHERE id = ?");
-    $stmt->bind_param("i", $user_id);
-    if ($stmt->execute()) {
-        $_SESSION['message'] = "🎉 Payment successful! You are now a Pro user.";
-        header("Location: upgrade_success.php");
-    } else {
-        echo "Error upgrading plan.";
-    }
-} else {
-    echo "Invalid payment details.";
+    header("Location: " . $checkout_session->url);
+    exit;
+
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage();
 }

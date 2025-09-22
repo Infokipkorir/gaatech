@@ -65,8 +65,8 @@
   <p>If you have any questions or concerns about this policy, please contact us through the <a href="support.php">Support Page</a>.</p>
 
   <hr>
-  <p class="text-center text-muted">© <?= date('Y') ?> Gaatech QR. All rights reserved.</p>
 </div>
 
 </body>
 </html>
+<?php include 'footer.php' ?>

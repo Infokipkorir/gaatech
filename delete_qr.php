@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'db.php';
+include "loader.php";
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');

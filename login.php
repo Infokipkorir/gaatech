@@ -1,10 +1,42 @@
-<?php session_start(); ?>
+<?php
+session_start();
+require 'db.php'; // DB connection file
+include "loader.php";
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']); // Make sure to hash/verify in real usage
+
+    // Prepare the query with the new user_id column
+    $stmt = $conn->prepare("SELECT user_id, username, password FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        // Check password (replace with password_verify if using hashes)
+        if ($password === $row['password']) {
+            // Store user_id and username in session
+            $_SESSION['user_id'] = $row['user_id'];
+            $_SESSION['username'] = $row['username'];
+
+            header("Location: index.php");
+            exit;
+        } else {
+            echo "Invalid password.";
+        }
+    } else {
+        echo "User not found.";
+    }
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Login - Gaatech QR</title>
-  <link rel="icon" type="image/png" href="admin\assets\Gaatech logo2.jpg">
+  <link rel="icon" type="image/png" href="admin\assets\favicon.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
@@ -95,7 +127,7 @@
     </form>
 
     <div class="register-link">
-      Don't have an account? <a href="signup.php">Register</a>
+      Don't have an account? <a href="register.php">Register</a>
     </div>
   </div>
 </body>

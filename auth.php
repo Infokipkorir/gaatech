@@ -39,19 +39,17 @@ if (isset($_POST['login'])) {
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT id, name, password FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
+    $stmt = $conn->prepare("SELECT user_id, name, email, password FROM users WHERE email = ? LIMIT 1");
+    $stmt->bind_param("s", $email); // Bind email input
     $stmt->execute();
-
-    $stmt->store_result();
-    if ($stmt->num_rows === 1) {
-        $stmt->bind_result($id, $name, $hashed_password);
-        $stmt->fetch();
+    $stmt->bind_result($uid, $name, $emailFetched, $hashedPassword); // 4 variables for 4 columns
+     $stmt->fetch();
+    $stmt->close();
 
         if (password_verify($password, $hashed_password)) {
             $_SESSION['user_id'] = $id;
             $_SESSION['user_name'] = $name;
-            header("Location: dashboard.php"); // Redirect after login
+            header("Location: index.php"); // Redirect after login
         } else {
             $_SESSION['error'] = "Invalid password.";
             header("Location: login.php");
@@ -63,7 +61,6 @@ if (isset($_POST['login'])) {
 
     $stmt->close();
     exit;
-}
 
 if ($_SESSION['role'] === 'trial') {
     $stmt = $conn->prepare("SELECT trial_started_at FROM users WHERE id = ?");
